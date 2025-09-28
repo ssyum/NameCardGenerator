@@ -805,7 +805,7 @@ select.form-control {
   margin: 0;
 }
 
-/* Upload Areas */
+/* Upload Areas - Fixed */
 .upload-area {
   position: relative;
   border: 2px dashed var(--color-border);
@@ -836,10 +836,12 @@ select.form-control {
   height: 100%;
   opacity: 0;
   cursor: pointer;
+  z-index: 10;
 }
 
 .upload-content {
-  pointer-events: none;
+  position: relative;
+  z-index: 1;
 }
 
 .upload-icon {

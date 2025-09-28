@@ -46,8 +46,12 @@ class NamecardGenerator {
     }
     
     setupFileUpload(uploadArea, fileInput, handler) {
-        // Click to upload
-        uploadArea.addEventListener('click', () => fileInput.click());
+        // Click to upload - fix the click handler
+        uploadArea.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            fileInput.click();
+        });
         
         // File input change
         fileInput.addEventListener('change', (e) => {
@@ -62,7 +66,8 @@ class NamecardGenerator {
             uploadArea.classList.add('dragover');
         });
         
-        uploadArea.addEventListener('dragleave', () => {
+        uploadArea.addEventListener('dragleave', (e) => {
+            e.preventDefault();
             uploadArea.classList.remove('dragover');
         });
         
@@ -216,34 +221,29 @@ class NamecardGenerator {
             loadingOverlay.style.display = 'flex';
             this.showGenerateStatus(generateStatus, 'Generating namecards...', 'processing');
             
-            // Load PDF-lib
+            // CRITICAL FIX: Extract functions from PDFLib properly
             const { PDFDocument, rgb, StandardFonts } = PDFLib;
             
             // Load the template PDF
             const templatePdf = await PDFDocument.load(this.pdfTemplate);
-            const templatePage = templatePdf.getPages()[0];
             
             // Create new PDF document
             const pdfDoc = await PDFDocument.create();
             const helveticaFont = await pdfDoc.embedFont(StandardFonts.Helvetica);
             
             // Process names in groups of 4 (one page)
-            let currentPageIndex = 0;
-            
             for (let i = 0; i < this.csvData.length; i += 4) {
                 // Copy template page
                 const [copiedPage] = await pdfDoc.copyPages(templatePdf, [0]);
                 const page = pdfDoc.addPage(copiedPage);
                 
-                // Add names to sections
+                // Add names to sections, passing rgb function as parameter
                 for (let j = 0; j < 4 && i + j < this.csvData.length; j++) {
                     const person = this.csvData[i + j];
                     const section = this.a4Dimensions.sections[j];
                     
-                    await this.addNameToSection(page, person, section, helveticaFont);
+                    this.addNameToSection(page, person, section, helveticaFont, rgb);
                 }
-                
-                currentPageIndex++;
             }
             
             // Save the PDF
@@ -260,7 +260,7 @@ class NamecardGenerator {
         }
     }
     
-    async addNameToSection(page, person, section, font) {
+    addNameToSection(page, person, section, font, rgb) {
         const { fontSize } = this.textFormatting;
         const text = `${person.Name}\n${person.Surname}`;
         
@@ -285,7 +285,7 @@ class NamecardGenerator {
                 y: yPosition,
                 size: fontSize,
                 font: font,
-                color: rgb(...this.textFormatting.fontColor),
+                color: rgb(...this.textFormatting.fontColor), // Now rgb is properly passed as parameter
             });
             
             yPosition -= lineHeight;
