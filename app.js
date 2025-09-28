@@ -2,65 +2,104 @@ class NamecardGenerator {
     constructor() {
         this.csvData = [];
         this.pdfTemplate = null;
+        this.customFont = null;
+        this.customFontFile = null;
         this.generatedPdf = null;
+        this.namePositions = [];
+        this.isDeveloperMode = false;
+        this.draggedElement = null;
+        this.dragOffset = { x: 0, y: 0 };
         
         // A4 dimensions and sections from provided data
         this.a4Dimensions = {
             width: 595.28,
             height: 841.89,
             sections: [
-                { id: "top-left", x: 0, y: 420.945, width: 297.64, height: 420.945 },
-                { id: "top-right", x: 297.64, y: 420.945, width: 297.64, height: 420.945 },
-                { id: "bottom-left", x: 0, y: 0, width: 297.64, height: 420.945 },
-                { id: "bottom-right", x: 297.64, y: 0, width: 297.64, height: 420.945 }
+                { id: "top-left", x: 0, y: 420.945, width: 297.64, height: 420.945, centerX: 148.82, centerY: 631.4175 },
+                { id: "top-right", x: 297.64, y: 420.945, width: 297.64, height: 420.945, centerX: 446.46, centerY: 631.4175 },
+                { id: "bottom-left", x: 0, y: 0, width: 297.64, height: 420.945, centerX: 148.82, centerY: 210.4725 },
+                { id: "bottom-right", x: 297.64, y: 0, width: 297.64, height: 420.945, centerX: 446.46, centerY: 210.4725 }
             ]
         };
         
         this.textFormatting = {
             fontSize: 18,
-            fontColor: [0, 0, 0], // RGB for black
+            fontColor: [0, 0, 0],
             lineHeight: 1.2
         };
         
         this.initializeEventListeners();
+        this.updateSteps(); // Initialize step states
     }
     
     initializeEventListeners() {
-        // CSV file upload
-        const csvUploadArea = document.getElementById('csv-upload-area');
-        const csvFileInput = document.getElementById('csv-file');
-        
-        this.setupFileUpload(csvUploadArea, csvFileInput, this.handleCsvUpload.bind(this));
-        
-        // PDF file upload
-        const pdfUploadArea = document.getElementById('pdf-upload-area');
-        const pdfFileInput = document.getElementById('pdf-file');
-        
-        this.setupFileUpload(pdfUploadArea, pdfFileInput, this.handlePdfUpload.bind(this));
-        
-        // Generate button
-        document.getElementById('generate-btn').addEventListener('click', this.generateNamecards.bind(this));
-        
-        // Download button
-        document.getElementById('download-btn').addEventListener('click', this.downloadPdf.bind(this));
-    }
-    
-    setupFileUpload(uploadArea, fileInput, handler) {
-        // Click to upload - fix the click handler
-        uploadArea.addEventListener('click', (e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            fileInput.click();
-        });
-        
-        // File input change
-        fileInput.addEventListener('change', (e) => {
+        // File input direct event listeners
+        document.getElementById('csv-file').addEventListener('change', (e) => {
             if (e.target.files.length > 0) {
-                handler(e.target.files[0]);
+                this.handleCsvUpload(e.target.files[0]);
             }
         });
         
-        // Drag and drop
+        document.getElementById('pdf-file').addEventListener('change', (e) => {
+            if (e.target.files.length > 0) {
+                this.handlePdfUpload(e.target.files[0]);
+            }
+        });
+        
+        document.getElementById('font-file').addEventListener('change', (e) => {
+            if (e.target.files.length > 0) {
+                this.handleFontUpload(e.target.files[0]);
+            }
+        });
+        
+        // Upload area click handlers
+        document.getElementById('csv-upload-area').addEventListener('click', (e) => {
+            e.preventDefault();
+            document.getElementById('csv-file').click();
+        });
+        
+        document.getElementById('pdf-upload-area').addEventListener('click', (e) => {
+            e.preventDefault();
+            document.getElementById('pdf-file').click();
+        });
+        
+        document.getElementById('font-upload-area').addEventListener('click', (e) => {
+            e.preventDefault();
+            if (this.csvData.length > 0 && this.pdfTemplate) {
+                document.getElementById('font-file').click();
+            }
+        });
+        
+        // Drag and drop for each upload area
+        this.setupDragAndDrop('csv-upload-area', this.handleCsvUpload.bind(this));
+        this.setupDragAndDrop('pdf-upload-area', this.handlePdfUpload.bind(this));
+        this.setupDragAndDrop('font-upload-area', this.handleFontUpload.bind(this));
+        
+        // Developer mode toggle
+        const devModeCheckbox = document.getElementById('dev-mode-checkbox');
+        devModeCheckbox.addEventListener('change', (e) => {
+            this.toggleDeveloperMode(e.target.checked);
+        });
+        
+        // Buttons
+        document.getElementById('generate-btn').addEventListener('click', (e) => {
+            if (!e.target.disabled) {
+                this.generateNamecards();
+            }
+        });
+        
+        document.getElementById('download-btn').addEventListener('click', this.downloadPdf.bind(this));
+        document.getElementById('reset-positions-btn').addEventListener('click', this.resetAllPositions.bind(this));
+        
+        // Mouse events for dragging
+        document.addEventListener('mousedown', this.handleMouseDown.bind(this));
+        document.addEventListener('mousemove', this.handleMouseMove.bind(this));
+        document.addEventListener('mouseup', this.handleMouseUp.bind(this));
+    }
+    
+    setupDragAndDrop(areaId, handler) {
+        const uploadArea = document.getElementById(areaId);
+        
         uploadArea.addEventListener('dragover', (e) => {
             e.preventDefault();
             uploadArea.classList.add('dragover');
@@ -76,6 +115,10 @@ class NamecardGenerator {
             uploadArea.classList.remove('dragover');
             
             if (e.dataTransfer.files.length > 0) {
+                // Check if it's font upload and prerequisites aren't met
+                if (areaId === 'font-upload-area' && (!this.csvData.length || !this.pdfTemplate)) {
+                    return;
+                }
                 handler(e.dataTransfer.files[0]);
             }
         });
@@ -101,7 +144,6 @@ class NamecardGenerator {
                     return;
                 }
                 
-                // Validate required columns
                 const data = results.data;
                 if (data.length === 0) {
                     this.showStatus(statusEl, 'CSV file is empty', 'error');
@@ -114,7 +156,6 @@ class NamecardGenerator {
                     return;
                 }
                 
-                // Filter out empty rows
                 this.csvData = data.filter(row => row.Name && row.Surname);
                 
                 if (this.csvData.length === 0) {
@@ -124,8 +165,8 @@ class NamecardGenerator {
                 
                 uploadArea.classList.add('has-file');
                 this.showStatus(statusEl, `Successfully loaded ${this.csvData.length} names`, 'success');
-                this.activatePreviewStep();
-                this.updateGenerateButton();
+                this.initializeNamePositions();
+                this.updateSteps();
             },
             error: (error) => {
                 this.showStatus(statusEl, 'Error reading CSV file: ' + error.message, 'error');
@@ -149,7 +190,7 @@ class NamecardGenerator {
             this.pdfTemplate = e.target.result;
             uploadArea.classList.add('has-file');
             this.showStatus(statusEl, 'PDF template loaded successfully', 'success');
-            this.updateGenerateButton();
+            this.updateSteps();
         };
         
         reader.onerror = () => {
@@ -159,38 +200,288 @@ class NamecardGenerator {
         reader.readAsArrayBuffer(file);
     }
     
-    showStatus(element, message, type) {
-        element.textContent = message;
-        element.className = `upload-status ${type}`;
-        element.style.display = 'block';
+    handleFontUpload(file) {
+        // Check prerequisites
+        if (!this.csvData.length || !this.pdfTemplate) {
+            return;
+        }
+        
+        const statusEl = document.getElementById('font-status');
+        const uploadArea = document.getElementById('font-upload-area');
+        const fontPreview = document.getElementById('font-preview');
+        const fontPreviewText = document.getElementById('font-preview-text');
+        
+        const validExtensions = ['.ttf', '.otf', '.woff', '.woff2'];
+        const fileExtension = '.' + file.name.split('.').pop().toLowerCase();
+        
+        if (!validExtensions.includes(fileExtension)) {
+            this.showStatus(statusEl, 'Please select a valid font file (.ttf, .otf, .woff, .woff2)', 'error');
+            return;
+        }
+        
+        this.showStatus(statusEl, 'Loading font file...', 'processing');
+        
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            this.customFontFile = file;
+            uploadArea.classList.add('has-file');
+            this.showStatus(statusEl, `Font "${file.name}" loaded successfully`, 'success');
+            
+            // Show font preview
+            const fontUrl = URL.createObjectURL(file);
+            const fontFace = new FontFace('CustomFont', `url(${fontUrl})`);
+            
+            fontFace.load().then(() => {
+                document.fonts.add(fontFace);
+                fontPreviewText.style.fontFamily = 'CustomFont, sans-serif';
+                fontPreview.style.display = 'block';
+            }).catch(() => {
+                console.warn('Could not preview font, but will still use for PDF generation');
+                fontPreview.style.display = 'block';
+                fontPreviewText.style.fontFamily = 'sans-serif';
+            });
+        };
+        
+        reader.onerror = () => {
+            this.showStatus(statusEl, 'Error reading font file', 'error');
+        };
+        
+        reader.readAsArrayBuffer(file);
+    }
+    
+    initializeNamePositions() {
+        this.namePositions = this.csvData.map((person, index) => {
+            const sectionIndex = index % 4;
+            const section = this.a4Dimensions.sections[sectionIndex];
+            return {
+                name: person.Name,
+                surname: person.Surname,
+                x: section.centerX,
+                y: section.centerY,
+                sectionIndex: sectionIndex
+            };
+        });
+    }
+    
+    updateSteps() {
+        const hasBasicFiles = this.csvData.length > 0 && this.pdfTemplate;
+        
+        // Font step (Step 3)
+        const fontStep = document.getElementById('font-step');
+        const fontPlaceholder = document.getElementById('font-placeholder');
+        
+        if (hasBasicFiles) {
+            fontStep.classList.remove('step--disabled');
+            fontStep.classList.add('step--active');
+            fontPlaceholder.style.display = 'none';
+        } else {
+            fontStep.classList.add('step--disabled');
+            fontStep.classList.remove('step--active');
+            fontPlaceholder.style.display = 'block';
+        }
+        
+        // Preview step (Step 4)
+        if (hasBasicFiles) {
+            this.activatePreviewStep();
+        }
+        
+        // Generate step (Step 5)
+        this.updateGenerateButton();
     }
     
     activatePreviewStep() {
         const previewStep = document.getElementById('preview-step');
         const previewContent = document.getElementById('preview-content');
         const nameCount = document.getElementById('name-count');
-        const tbody = document.getElementById('preview-tbody');
         
-        // Activate the step
         previewStep.classList.remove('step--disabled');
         previewStep.classList.add('step--active');
-        
-        // Show content and hide placeholder
         previewContent.style.display = 'block';
-        
-        // Update the data
         nameCount.textContent = this.csvData.length;
         
+        this.createInteractivePreview();
+        this.updatePreviewTable();
+    }
+    
+    createInteractivePreview() {
+        const nameBlocksContainer = document.getElementById('name-blocks');
+        nameBlocksContainer.innerHTML = '';
+        
+        this.namePositions.forEach((position, index) => {
+            const nameBlock = document.createElement('div');
+            nameBlock.className = 'name-block';
+            nameBlock.dataset.index = index;
+            nameBlock.innerHTML = `${position.name}<br>${position.surname}`;
+            
+            // Convert PDF coordinates to preview coordinates
+            const previewCoords = this.pdfToPreviewCoords(position.x, position.y);
+            nameBlock.style.left = previewCoords.x + 'px';
+            nameBlock.style.top = previewCoords.y + 'px';
+            
+            nameBlocksContainer.appendChild(nameBlock);
+        });
+    }
+    
+    updatePreviewTable() {
+        const tbody = document.getElementById('preview-tbody');
         tbody.innerHTML = '';
-        this.csvData.forEach((person, index) => {
+        
+        this.namePositions.forEach((position, index) => {
             const row = document.createElement('tr');
             row.innerHTML = `
                 <td>${index + 1}</td>
-                <td>${person.Name}</td>
-                <td>${person.Surname}</td>
+                <td>${position.name}</td>
+                <td>${position.surname}</td>
+                <td class="coords-column" style="${this.isDeveloperMode ? '' : 'display: none;'}">${position.x.toFixed(1)}, ${position.y.toFixed(1)}</td>
             `;
             tbody.appendChild(row);
         });
+    }
+    
+    pdfToPreviewCoords(pdfX, pdfY) {
+        const preview = document.getElementById('pdf-preview');
+        
+        const scaleX = preview.offsetWidth / this.a4Dimensions.width;
+        const scaleY = preview.offsetHeight / this.a4Dimensions.height;
+        
+        return {
+            x: (pdfX * scaleX) - 50, // -50 to center the block
+            y: preview.offsetHeight - (pdfY * scaleY) - 25 // Flip Y and center
+        };
+    }
+    
+    previewToPdfCoords(previewX, previewY) {
+        const preview = document.getElementById('pdf-preview');
+        
+        const scaleX = this.a4Dimensions.width / preview.offsetWidth;
+        const scaleY = this.a4Dimensions.height / preview.offsetHeight;
+        
+        return {
+            x: (previewX + 50) * scaleX, // +50 to account for centering
+            y: (preview.offsetHeight - previewY - 25) * scaleY // Flip Y and account for centering
+        };
+    }
+    
+    handleMouseDown(e) {
+        if (e.target.classList.contains('name-block')) {
+            this.draggedElement = e.target;
+            this.draggedElement.classList.add('dragging');
+            
+            const rect = this.draggedElement.getBoundingClientRect();
+            const previewRect = document.getElementById('pdf-preview').getBoundingClientRect();
+            
+            this.dragOffset = {
+                x: e.clientX - rect.left,
+                y: e.clientY - rect.top
+            };
+            
+            e.preventDefault();
+        }
+    }
+    
+    handleMouseMove(e) {
+        if (this.draggedElement) {
+            const previewRect = document.getElementById('pdf-preview').getBoundingClientRect();
+            
+            let newX = e.clientX - previewRect.left - this.dragOffset.x;
+            let newY = e.clientY - previewRect.top - this.dragOffset.y;
+            
+            // Constrain to preview area
+            const preview = document.getElementById('pdf-preview');
+            newX = Math.max(0, Math.min(newX, preview.offsetWidth - this.draggedElement.offsetWidth));
+            newY = Math.max(0, Math.min(newY, preview.offsetHeight - this.draggedElement.offsetHeight));
+            
+            this.draggedElement.style.left = newX + 'px';
+            this.draggedElement.style.top = newY + 'px';
+            
+            // Update coordinates display
+            if (this.isDeveloperMode) {
+                const pdfCoords = this.previewToPdfCoords(newX, newY);
+                const coordsDisplay = document.getElementById('current-coordinates');
+                coordsDisplay.textContent = `${pdfCoords.x.toFixed(1)}, ${pdfCoords.y.toFixed(1)}`;
+            }
+            
+            // Check if within correct section bounds
+            const index = parseInt(this.draggedElement.dataset.index);
+            const sectionIndex = index % 4;
+            this.checkSectionBounds(newX, newY, sectionIndex);
+        }
+    }
+    
+    handleMouseUp(e) {
+        if (this.draggedElement) {
+            this.draggedElement.classList.remove('dragging');
+            
+            // Update position data
+            const index = parseInt(this.draggedElement.dataset.index);
+            const rect = this.draggedElement.getBoundingClientRect();
+            const previewRect = document.getElementById('pdf-preview').getBoundingClientRect();
+            
+            const previewX = rect.left - previewRect.left;
+            const previewY = rect.top - previewRect.top;
+            const pdfCoords = this.previewToPdfCoords(previewX, previewY);
+            
+            this.namePositions[index].x = pdfCoords.x;
+            this.namePositions[index].y = pdfCoords.y;
+            
+            this.updatePreviewTable();
+            this.draggedElement = null;
+            
+            // Clear coordinates display
+            if (this.isDeveloperMode) {
+                const coordsDisplay = document.getElementById('current-coordinates');
+                coordsDisplay.textContent = '-';
+            }
+        }
+    }
+    
+    checkSectionBounds(previewX, previewY, expectedSectionIndex) {
+        const preview = document.getElementById('pdf-preview');
+        const sectionWidth = preview.offsetWidth / 2;
+        const sectionHeight = preview.offsetHeight / 2;
+        
+        let actualSectionIndex;
+        if (previewX < sectionWidth && previewY < sectionHeight) {
+            actualSectionIndex = 0; // top-left
+        } else if (previewX >= sectionWidth && previewY < sectionHeight) {
+            actualSectionIndex = 1; // top-right
+        } else if (previewX < sectionWidth && previewY >= sectionHeight) {
+            actualSectionIndex = 2; // bottom-left
+        } else {
+            actualSectionIndex = 3; // bottom-right
+        }
+        
+        if (actualSectionIndex !== expectedSectionIndex) {
+            this.draggedElement.classList.add('out-of-bounds');
+        } else {
+            this.draggedElement.classList.remove('out-of-bounds');
+        }
+    }
+    
+    resetAllPositions() {
+        this.initializeNamePositions();
+        this.createInteractivePreview();
+        this.updatePreviewTable();
+    }
+    
+    toggleDeveloperMode(isEnabled) {
+        this.isDeveloperMode = isEnabled;
+        
+        if (this.isDeveloperMode) {
+            document.body.classList.add('dev-mode');
+        } else {
+            document.body.classList.remove('dev-mode');
+        }
+        
+        // Update table visibility
+        const coordsCols = document.querySelectorAll('.coords-column');
+        coordsCols.forEach(col => {
+            col.style.display = this.isDeveloperMode ? 'table-cell' : 'none';
+        });
+        
+        // Update coordinates display
+        const coordsDisplay = document.getElementById('coordinates-display');
+        coordsDisplay.style.display = this.isDeveloperMode ? 'flex' : 'none';
     }
     
     updateGenerateButton() {
@@ -214,6 +505,11 @@ class NamecardGenerator {
     }
     
     async generateNamecards() {
+        // Double-check readiness
+        if (!this.csvData.length || !this.pdfTemplate) {
+            return;
+        }
+        
         const loadingOverlay = document.getElementById('loading-overlay');
         const generateStatus = document.getElementById('generate-status');
         
@@ -221,32 +517,38 @@ class NamecardGenerator {
             loadingOverlay.style.display = 'flex';
             this.showGenerateStatus(generateStatus, 'Generating namecards...', 'processing');
             
-            // CRITICAL FIX: Extract functions from PDFLib properly
             const { PDFDocument, rgb, StandardFonts } = PDFLib;
             
-            // Load the template PDF
             const templatePdf = await PDFDocument.load(this.pdfTemplate);
-            
-            // Create new PDF document
             const pdfDoc = await PDFDocument.create();
-            const helveticaFont = await pdfDoc.embedFont(StandardFonts.Helvetica);
+            
+            // Embed font
+            let font;
+            if (this.customFontFile) {
+                try {
+                    const fontBytes = await this.customFontFile.arrayBuffer();
+                    font = await pdfDoc.embedFont(fontBytes);
+                } catch (error) {
+                    console.warn('Failed to embed custom font, using Helvetica:', error);
+                    font = await pdfDoc.embedFont(StandardFonts.Helvetica);
+                }
+            } else {
+                font = await pdfDoc.embedFont(StandardFonts.Helvetica);
+            }
             
             // Process names in groups of 4 (one page)
             for (let i = 0; i < this.csvData.length; i += 4) {
-                // Copy template page
                 const [copiedPage] = await pdfDoc.copyPages(templatePdf, [0]);
                 const page = pdfDoc.addPage(copiedPage);
                 
-                // Add names to sections, passing rgb function as parameter
                 for (let j = 0; j < 4 && i + j < this.csvData.length; j++) {
-                    const person = this.csvData[i + j];
-                    const section = this.a4Dimensions.sections[j];
+                    const positionIndex = i + j;
+                    const position = this.namePositions[positionIndex];
                     
-                    this.addNameToSection(page, person, section, helveticaFont, rgb);
+                    await this.addNameToSection(page, position, font);
                 }
             }
             
-            // Save the PDF
             this.generatedPdf = await pdfDoc.save();
             
             loadingOverlay.style.display = 'none';
@@ -260,36 +562,36 @@ class NamecardGenerator {
         }
     }
     
-    addNameToSection(page, person, section, font, rgb) {
+    async addNameToSection(page, position, font) {
         const { fontSize } = this.textFormatting;
-        const text = `${person.Name}\n${person.Surname}`;
+        const text = `${position.name}\n${position.surname}`;
         
-        // Calculate center position for the section
-        const centerX = section.x + (section.width / 2);
-        const centerY = section.y + (section.height / 2);
-        
-        // Measure text dimensions
         const lines = text.split('\n');
         const lineHeight = fontSize * this.textFormatting.lineHeight;
         const totalTextHeight = lines.length * lineHeight;
         
-        // Position text at center of section
-        let yPosition = centerY + (totalTextHeight / 2) - lineHeight;
+        let yPosition = position.y + (totalTextHeight / 2) - lineHeight;
         
         lines.forEach((line) => {
             const textWidth = font.widthOfTextAtSize(line, fontSize);
-            const xPosition = centerX - (textWidth / 2);
+            const xPosition = position.x - (textWidth / 2);
             
             page.drawText(line, {
                 x: xPosition,
                 y: yPosition,
                 size: fontSize,
                 font: font,
-                color: rgb(...this.textFormatting.fontColor), // Now rgb is properly passed as parameter
+                color: rgb(...this.textFormatting.fontColor),
             });
             
             yPosition -= lineHeight;
         });
+    }
+    
+    showStatus(element, message, type) {
+        element.textContent = message;
+        element.className = `upload-status ${type}`;
+        element.style.display = 'block';
     }
     
     showGenerateStatus(element, message, type) {

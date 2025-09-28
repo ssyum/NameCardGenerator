@@ -13,6 +13,15 @@
         <header class="header">
             <h1>Namecard Generator</h1>
             <p class="header__subtitle">Upload your CSV file and PDF template to generate professional namecards</p>
+            
+            <!-- Developer Mode Toggle -->
+            <div class="dev-mode-toggle">
+                <label class="toggle-label">
+                    <input type="checkbox" id="dev-mode-checkbox" class="toggle-checkbox">
+                    <span class="toggle-slider"></span>
+                    <span class="toggle-text">Developer Mode</span>
+                </label>
+            </div>
         </header>
 
         <main class="main">
@@ -50,11 +59,35 @@
                 <div class="upload-status" id="pdf-status"></div>
             </div>
 
-            <!-- Step 3: Preview -->
-            <div class="step step--disabled" id="preview-step">
+            <!-- Step 3: Font Upload -->
+            <div class="step step--disabled" id="font-step">
                 <h2 class="step__title">
                     <span class="step__number step__number--disabled">3</span>
-                    Preview Names
+                    Upload Font (Optional)
+                </h2>
+                <div class="upload-area" id="font-upload-area">
+                    <input type="file" id="font-file" accept=".ttf,.otf,.woff,.woff2" class="upload-input">
+                    <div class="upload-content">
+                        <div class="upload-icon">🔤</div>
+                        <p class="upload-text">Drop your font file here or <span class="upload-link">click to browse</span></p>
+                        <p class="upload-hint">Supports .ttf, .otf, .woff, .woff2 formats</p>
+                    </div>
+                </div>
+                <div class="upload-status" id="font-status"></div>
+                <div class="font-preview" id="font-preview" style="display: none;">
+                    <p class="font-preview-label">Font Preview:</p>
+                    <div class="font-preview-text" id="font-preview-text">Sample Name</div>
+                </div>
+                <div class="step-placeholder" id="font-placeholder">
+                    <p class="step-placeholder__text">Upload CSV and PDF files first, then optionally upload a custom font</p>
+                </div>
+            </div>
+
+            <!-- Step 4: Preview -->
+            <div class="step step--disabled" id="preview-step">
+                <h2 class="step__title">
+                    <span class="step__number step__number--disabled">4</span>
+                    Preview & Adjust Names
                 </h2>
                 <div class="step-content" id="preview-content" style="display: none;">
                     <div class="card">
@@ -62,6 +95,31 @@
                             <div class="preview-summary">
                                 <p><strong id="name-count">0</strong> names loaded from CSV</p>
                             </div>
+                            
+                            <!-- Interactive Preview -->
+                            <div class="interactive-preview" id="interactive-preview">
+                                <div class="preview-toolbar">
+                                    <button class="btn btn--sm btn--secondary" id="reset-positions-btn">Reset All Positions</button>
+                                    <div class="coordinates-display" id="coordinates-display" style="display: none;">
+                                        <span class="coordinates-title">Coordinates:</span>
+                                        <span id="current-coordinates">-</span>
+                                    </div>
+                                </div>
+                                
+                                <div class="pdf-preview-container">
+                                    <div class="pdf-preview" id="pdf-preview">
+                                        <div class="section-bounds" style="display: none;">
+                                            <div class="section top-left" data-section="0"></div>
+                                            <div class="section top-right" data-section="1"></div>
+                                            <div class="section bottom-left" data-section="2"></div>
+                                            <div class="section bottom-right" data-section="3"></div>
+                                        </div>
+                                        <div class="name-blocks" id="name-blocks"></div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Names Table -->
                             <div class="table-container">
                                 <table class="preview-table" id="preview-table">
                                     <thead>
@@ -69,6 +127,7 @@
                                             <th>#</th>
                                             <th>First Name</th>
                                             <th>Last Name</th>
+                                            <th class="coords-column" style="display: none;">X, Y Coordinates</th>
                                         </tr>
                                     </thead>
                                     <tbody id="preview-tbody">
@@ -79,24 +138,24 @@
                     </div>
                 </div>
                 <div class="step-placeholder">
-                    <p class="step-placeholder__text">Upload a CSV file to see name preview</p>
+                    <p class="step-placeholder__text">Upload CSV and PDF files to see interactive preview</p>
                 </div>
             </div>
 
-            <!-- Step 4: Generate -->
+            <!-- Step 5: Generate -->
             <div class="step step--disabled" id="generate-step">
                 <h2 class="step__title">
-                    <span class="step__number step__number--disabled">4</span>
-                    Generate Namecards
+                    <span class="step__number step__number--disabled">5</span>
+                    Generate Final Namecards
                 </h2>
                 <div class="generate-section">
                     <button class="btn btn--primary btn--lg" id="generate-btn" disabled>
-                        Generate Namecards
+                        Generate Final PDF
                     </button>
                     <div class="generate-status" id="generate-status"></div>
                 </div>
                 <div class="step-placeholder" id="generate-placeholder">
-                    <p class="step-placeholder__text">Upload both CSV and PDF files to generate namecards</p>
+                    <p class="step-placeholder__text">Complete the preview step to generate final namecards</p>
                 </div>
             </div>
 

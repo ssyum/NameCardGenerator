@@ -744,6 +744,7 @@ select.form-control {
   text-align: center;
   margin-bottom: var(--space-32);
   padding: var(--space-32) 0;
+  position: relative;
 }
 
 .header__subtitle {
@@ -752,8 +753,60 @@ select.form-control {
   margin-top: var(--space-8);
 }
 
+/* Developer Mode Toggle */
+.dev-mode-toggle {
+  position: absolute;
+  top: var(--space-16);
+  right: var(--space-16);
+  display: flex;
+  align-items: center;
+}
+
+.toggle-label {
+  display: flex;
+  align-items: center;
+  gap: var(--space-8);
+  cursor: pointer;
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+}
+
+.toggle-checkbox {
+  display: none;
+}
+
+.toggle-slider {
+  position: relative;
+  width: 44px;
+  height: 24px;
+  background: var(--color-border);
+  border-radius: var(--radius-full);
+  transition: background-color var(--duration-normal) var(--ease-standard);
+}
+
+.toggle-slider::before {
+  content: '';
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 20px;
+  height: 20px;
+  background: var(--color-surface);
+  border-radius: 50%;
+  transition: transform var(--duration-normal) var(--ease-standard);
+  box-shadow: var(--shadow-sm);
+}
+
+.toggle-checkbox:checked + .toggle-slider {
+  background: var(--color-primary);
+}
+
+.toggle-checkbox:checked + .toggle-slider::before {
+  transform: translateX(20px);
+}
+
 .main {
-  max-width: 800px;
+  max-width: 900px;
   margin: 0 auto;
 }
 
@@ -805,7 +858,7 @@ select.form-control {
   margin: 0;
 }
 
-/* Upload Areas - Fixed */
+/* Upload Areas */
 .upload-area {
   position: relative;
   border: 2px dashed var(--color-border);
@@ -836,12 +889,10 @@ select.form-control {
   height: 100%;
   opacity: 0;
   cursor: pointer;
-  z-index: 10;
 }
 
 .upload-content {
-  position: relative;
-  z-index: 1;
+  pointer-events: none;
 }
 
 .upload-icon {
@@ -893,6 +944,161 @@ select.form-control {
   border: 1px solid rgba(var(--color-warning-rgb), 0.3);
 }
 
+/* Font Preview */
+.font-preview {
+  margin-top: var(--space-16);
+  padding: var(--space-16);
+  background: var(--color-bg-1);
+  border-radius: var(--radius-base);
+  text-align: center;
+}
+
+.font-preview-label {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  margin-bottom: var(--space-8);
+}
+
+.font-preview-text {
+  font-size: var(--font-size-3xl);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text);
+}
+
+/* Interactive Preview */
+.interactive-preview {
+  margin-bottom: var(--space-24);
+}
+
+.preview-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--space-16);
+  padding: var(--space-12);
+  background: var(--color-bg-1);
+  border-radius: var(--radius-base);
+}
+
+.coordinates-display {
+  display: flex;
+  align-items: center;
+  gap: var(--space-8);
+  font-size: var(--font-size-sm);
+  font-family: var(--font-family-mono);
+}
+
+.coordinates-title {
+  color: var(--color-text-secondary);
+}
+
+.pdf-preview-container {
+  position: relative;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+}
+
+.pdf-preview {
+  position: relative;
+  width: 100%;
+  height: 600px;
+  background: var(--color-cream-100);
+  border-radius: var(--radius-base);
+}
+
+/* Section Boundaries */
+.section-bounds {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+.section {
+  position: absolute;
+  border: 2px dashed var(--color-primary);
+  opacity: 0.3;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: var(--font-size-sm);
+  color: var(--color-primary);
+  font-weight: var(--font-weight-medium);
+}
+
+.section.top-left {
+  top: 0;
+  left: 0;
+  width: 50%;
+  height: 50%;
+}
+
+.section.top-right {
+  top: 0;
+  right: 0;
+  width: 50%;
+  height: 50%;
+}
+
+.section.bottom-left {
+  bottom: 0;
+  left: 0;
+  width: 50%;
+  height: 50%;
+}
+
+.section.bottom-right {
+  bottom: 0;
+  right: 0;
+  width: 50%;
+  height: 50%;
+}
+
+/* Name Blocks */
+.name-blocks {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+
+.name-block {
+  position: absolute;
+  padding: var(--space-8) var(--space-12);
+  background: rgba(var(--color-primary-rgb), 0.1);
+  border: 2px solid var(--color-primary);
+  border-radius: var(--radius-base);
+  cursor: move;
+  user-select: none;
+  transition: all var(--duration-fast) var(--ease-standard);
+  font-size: var(--font-size-md);
+  font-weight: var(--font-weight-medium);
+  text-align: center;
+  min-width: 100px;
+  transform-origin: center;
+}
+
+.name-block:hover {
+  background: rgba(var(--color-primary-rgb), 0.2);
+  transform: scale(1.05);
+  z-index: 10;
+}
+
+.name-block.dragging {
+  opacity: 0.8;
+  transform: scale(1.1);
+  z-index: 20;
+  box-shadow: var(--shadow-lg);
+}
+
+.name-block.out-of-bounds {
+  border-color: var(--color-error);
+  background: rgba(var(--color-error-rgb), 0.1);
+}
+
 /* Preview Section */
 .preview-summary {
   margin-bottom: var(--space-16);
@@ -934,6 +1140,11 @@ select.form-control {
 
 .preview-table tr:hover {
   background: var(--color-bg-3);
+}
+
+.coords-column {
+  font-family: var(--font-family-mono);
+  font-size: var(--font-size-xs);
 }
 
 /* Generate Section */
@@ -1036,6 +1247,12 @@ select.form-control {
     padding: var(--space-20) 0;
   }
   
+  .dev-mode-toggle {
+    position: static;
+    justify-content: center;
+    margin-top: var(--space-16);
+  }
+  
   .upload-area {
     padding: var(--space-20);
   }
@@ -1051,6 +1268,15 @@ select.form-control {
   .btn--lg {
     padding: var(--space-12) var(--space-24);
     font-size: var(--font-size-md);
+  }
+  
+  .preview-toolbar {
+    flex-direction: column;
+    gap: var(--space-12);
+  }
+  
+  .pdf-preview {
+    height: 400px;
   }
 }
 
@@ -1100,4 +1326,36 @@ select.form-control {
 
 .step--active .step-placeholder {
   display: none;
+}
+
+/* Developer mode specific styles */
+.dev-mode .section-bounds {
+  display: block !important;
+}
+
+.dev-mode .coordinates-display {
+  display: flex !important;
+}
+
+.dev-mode .coords-column {
+  display: table-cell !important;
+}
+
+/* Color variables for consistent theming */
+:root {
+  --color-primary-rgb: 33, 128, 141;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --color-primary-rgb: 50, 184, 198;
+  }
+}
+
+[data-color-scheme="dark"] {
+  --color-primary-rgb: 50, 184, 198;
+}
+
+[data-color-scheme="light"] {
+  --color-primary-rgb: 33, 128, 141;
 }
