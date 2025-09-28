@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Namecard Generator</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://unpkg.com/papaparse@5.4.1/papaparse.min.js"></script>
+    <script src="https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <h1>Namecard Generator</h1>
+            <p class="header__subtitle">Upload your CSV file and PDF template to generate professional namecards</p>
+        </header>
+
+        <main class="main">
+            <!-- Step 1: CSV Upload -->
+            <div class="step">
+                <h2 class="step__title">
+                    <span class="step__number">1</span>
+                    Upload CSV File
+                </h2>
+                <div class="upload-area" id="csv-upload-area">
+                    <input type="file" id="csv-file" accept=".csv" class="upload-input">
+                    <div class="upload-content">
+                        <div class="upload-icon">📄</div>
+                        <p class="upload-text">Drop your CSV file here or <span class="upload-link">click to browse</span></p>
+                        <p class="upload-hint">CSV must contain "Name" and "Surname" columns</p>
+                    </div>
+                </div>
+                <div class="upload-status" id="csv-status"></div>
+            </div>
+
+            <!-- Step 2: PDF Upload -->
+            <div class="step">
+                <h2 class="step__title">
+                    <span class="step__number">2</span>
+                    Upload PDF Template
+                </h2>
+                <div class="upload-area" id="pdf-upload-area">
+                    <input type="file" id="pdf-file" accept=".pdf" class="upload-input">
+                    <div class="upload-content">
+                        <div class="upload-icon">📋</div>
+                        <p class="upload-text">Drop your PDF template here or <span class="upload-link">click to browse</span></p>
+                        <p class="upload-hint">A4 format PDF template for namecard design</p>
+                    </div>
+                </div>
+                <div class="upload-status" id="pdf-status"></div>
+            </div>
+
+            <!-- Step 3: Preview -->
+            <div class="step step--disabled" id="preview-step">
+                <h2 class="step__title">
+                    <span class="step__number step__number--disabled">3</span>
+                    Preview Names
+                </h2>
+                <div class="step-content" id="preview-content" style="display: none;">
+                    <div class="card">
+                        <div class="card__body">
+                            <div class="preview-summary">
+                                <p><strong id="name-count">0</strong> names loaded from CSV</p>
+                            </div>
+                            <div class="table-container">
+                                <table class="preview-table" id="preview-table">
+                                    <thead>
+                                        <tr>
+                                            <th>#</th>
+                                            <th>First Name</th>
+                                            <th>Last Name</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="preview-tbody">
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="step-placeholder">
+                    <p class="step-placeholder__text">Upload a CSV file to see name preview</p>
+                </div>
+            </div>
+
+            <!-- Step 4: Generate -->
+            <div class="step step--disabled" id="generate-step">
+                <h2 class="step__title">
+                    <span class="step__number step__number--disabled">4</span>
+                    Generate Namecards
+                </h2>
+                <div class="generate-section">
+                    <button class="btn btn--primary btn--lg" id="generate-btn" disabled>
+                        Generate Namecards
+                    </button>
+                    <div class="generate-status" id="generate-status"></div>
+                </div>
+                <div class="step-placeholder" id="generate-placeholder">
+                    <p class="step-placeholder__text">Upload both CSV and PDF files to generate namecards</p>
+                </div>
+            </div>
+
+            <!-- Download Section -->
+            <div class="step step--disabled" id="download-step" style="display: none;">
+                <h2 class="step__title">
+                    <span class="step__number success">✓</span>
+                    Download Ready
+                </h2>
+                <div class="download-section">
+                    <p class="download-message">Your namecards have been generated successfully!</p>
+                    <button class="btn btn--primary btn--lg" id="download-btn">
+                        Download PDF
+                    </button>
+                </div>
+            </div>
+        </main>
+
+        <!-- Loading Overlay -->
+        <div class="loading-overlay" id="loading-overlay" style="display: none;">
+            <div class="loading-content">
+                <div class="loading-spinner"></div>
+                <p class="loading-text">Generating namecards...</p>
+            </div>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
