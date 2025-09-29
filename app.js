@@ -565,17 +565,20 @@ class NamecardGenerator {
     async addNameToSection(page, position, font) {
         const { fontSize } = this.textFormatting;
         const text = `${position.name}\n${position.surname}`;
-        
+
         const lines = text.split('\n');
         const lineHeight = fontSize * this.textFormatting.lineHeight;
         const totalTextHeight = lines.length * lineHeight;
-        
+
         let yPosition = position.y + (totalTextHeight / 2) - lineHeight;
-        
+
+        // FIX: Use 'rgb' from PDFLib, not 'rbg'
+        const { rgb } = PDFLib;
+
         lines.forEach((line) => {
             const textWidth = font.widthOfTextAtSize(line, fontSize);
             const xPosition = position.x - (textWidth / 2);
-            
+
             page.drawText(line, {
                 x: xPosition,
                 y: yPosition,
@@ -583,7 +586,7 @@ class NamecardGenerator {
                 font: font,
                 color: rgb(...this.textFormatting.fontColor),
             });
-            
+
             yPosition -= lineHeight;
         });
     }

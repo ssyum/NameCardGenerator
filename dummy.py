@@ -15,7 +15,7 @@ last_names = [
 with open("dummy_names.csv", "w", newline='', encoding='utf-8') as csvfile:
     writer = csv.writer(csvfile)
     writer.writerow(["Vorname", "Nachname"])
-    for _ in range(100):
+    for _ in range(12):
         vorname = random.choice(first_names)
         nachname = random.choice(last_names)
         writer.writerow([vorname, nachname])
