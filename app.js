@@ -599,101 +599,49 @@ elements.generatePdfBtn.addEventListener('click', async () => {
 });
 
 async function generateFinalPDF() {
-  const { PDFDocument, rgb } = PDFLib;
-  
-  // Create new PDF document
-  const pdfDoc = await PDFDocument.create();
-  
-  // Embed font
-  let font;
-  if (appState.customFont) {
-    try {
-      font = await pdfDoc.embedFont(appState.customFont);
-    } catch (error) {
-      console.error('Error embedding custom font, using standard font:', error);
-      font = await pdfDoc.embedFont(PDFLib.StandardFonts.Helvetica);
-    }
-  } else {
-    font = await pdfDoc.embedFont(PDFLib.StandardFonts.Helvetica);
-  }
-  
-  // Load template PDF
-  const templatePdfDoc = await PDFDocument.load(appState.pdfTemplateData);
-  
-  // Calculate number of pages
-  const totalPages = Math.ceil(appState.names.length / NAMES_PER_PAGE);
-  
-  // Generate each page
-  for (let pageNum = 0; pageNum < totalPages; pageNum++) {
-    // Copy template page
-    const [templatePage] = await pdfDoc.copyPages(templatePdfDoc, [0]);
-    const page = pdfDoc.addPage(templatePage);
+  try {
+    const pdfDoc = await PDFDocument.create();
+    const templateBytes = templateArrayBuffer; // Your template file
     
-    const startIndex = pageNum * NAMES_PER_PAGE;
-    const endIndex = Math.min(startIndex + NAMES_PER_PAGE, appState.names.length);
+    const totalPages = Math.ceil(names.length / 4);
     
-    // Draw text for each name on this page
-    for (let i = startIndex; i < endIndex; i++) {
-      const textData = appState.cache[i];
-      if (!textData) continue;
+    for (let pageNum = 0; pageNum < totalPages; pageNum++) {
+      // Create a NEW PDFDocument from the template for EACH page
+      const templateDoc = await PDFDocument.load(templateBytes);
+      const [templatePage] = await pdfDoc.copyPages(templateDoc, [0]);
+      pdfDoc.addPage(templatePage);
       
-      const lines = textData.text.split('\n');
-      const fontSize = textData.fontSize;
-      const lineHeight = fontSize * 1.2;
-      const totalHeight = lines.length * lineHeight;
+      const pageIndex = pageNum;
+      const startIndex = pageNum * 4;
+      const endIndex = Math.min(startIndex + 4, names.length);
       
-      lines.forEach((line, lineIndex) => {
-        const y = PDF_HEIGHT - (textData.y - totalHeight / 2 + lineIndex * lineHeight + lineHeight / 2);
+      // Draw names on this page
+      for (let i = startIndex; i < endIndex; i++) {
+        const nameIndex = i;
+        const quadrantIndex = (i - startIndex); // 0, 1, 2, or 3
+        const state = cache[nameIndex];
         
-        if (textData.letterSpacing !== 0) {
-          // Draw with letter spacing
-          let currentX = textData.x;
-          const chars = line.split('');
-          let totalWidth = 0;
-          
-          chars.forEach(char => {
-            totalWidth += font.widthOfTextAtSize(char, fontSize) + textData.letterSpacing;
-          });
-          totalWidth -= textData.letterSpacing;
-          
-          currentX = textData.x - totalWidth / 2;
-          
-          chars.forEach(char => {
-            page.drawText(char, {
-              x: currentX,
-              y: y,
-              size: fontSize,
-              font: font,
-              color: rgb(0, 0, 0)
-            });
-            currentX += font.widthOfTextAtSize(char, fontSize) + textData.letterSpacing;
-          });
-        } else {
-          // Draw without letter spacing
-          const textWidth = font.widthOfTextAtSize(line, fontSize);
-          page.drawText(line, {
-            x: textData.x - textWidth / 2,
-            y: y,
-            size: fontSize,
-            font: font,
-            color: rgb(0, 0, 0)
-          });
+        if (state) {
+          // Draw the text on the page
+          // Use the state's position and styling
         }
-      });
+      }
     }
+    
+    // Download
+    const pdfBytes = await pdfDoc.save();
+    const blob = new Blob([pdfBytes], { type: 'application/pdf' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = 'namecards.pdf';
+    link.click();
+    URL.revokeObjectURL(url);
+    
+  } catch (error) {
+    console.error('Error generating PDF:', error);
+    alert('Error generating PDF: ' + error.message);
   }
-  
-  // Save and download
-  const pdfBytes = await pdfDoc.save();
-  const blob = new Blob([pdfBytes], { type: 'application/pdf' });
-  const url = URL.createObjectURL(blob);
-  
-  const link = document.createElement('a');
-  link.href = url;
-  link.download = 'namecards.pdf';
-  link.click();
-  
-  URL.revokeObjectURL(url);
 }
 
 // Initialize
