@@ -1,3 +1,5 @@
+const { PDFDocument } = window;
+
 // Initialize PDF.js worker
 pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
 
@@ -70,7 +72,7 @@ function showError(message) {
   errorDiv.className = 'error-message';
   errorDiv.textContent = message;
   elements.errorContainer.appendChild(errorDiv);
-  
+
   setTimeout(() => {
     errorDiv.remove();
   }, 5000);
@@ -102,7 +104,7 @@ elements.csvFile.addEventListener('change', (e) => {
 elements.loadNamesBtn.addEventListener('click', () => {
   const csvFile = elements.csvFile.files[0];
   const textInput = elements.textInput.value.trim();
-  
+
   if (csvFile) {
     loadNamesFromCSV(csvFile);
   } else if (textInput) {
@@ -114,28 +116,28 @@ elements.loadNamesBtn.addEventListener('click', () => {
 
 function loadNamesFromCSV(file) {
   showLoading('Parsing CSV...');
-  
+
   Papa.parse(file, {
     header: true,
     skipEmptyLines: true,
     complete: (results) => {
       hideLoading();
-      
+
       if (results.errors.length > 0) {
         showError('CSV parsing error: ' + results.errors[0].message);
         return;
       }
-      
+
       const names = results.data.map(row => ({
         firstName: (row.FirstName || row.firstname || row.first_name || '').trim(),
         lastName: (row.LastName || row.lastname || row.last_name || '').trim()
       })).filter(name => name.firstName || name.lastName);
-      
+
       if (names.length === 0) {
         showError('No valid names found in CSV');
         return;
       }
-      
+
       appState.names = names;
       initializeCache();
       showNameCount();
@@ -150,7 +152,7 @@ function loadNamesFromCSV(file) {
 
 function loadNamesFromText(text) {
   const lines = text.split('\n').filter(line => line.trim());
-  
+
   const names = lines.map(line => {
     const parts = line.trim().split(/\s+/);
     return {
@@ -158,12 +160,12 @@ function loadNamesFromText(text) {
       lastName: parts.slice(1).join(' ') || ''
     };
   }).filter(name => name.firstName || name.lastName);
-  
+
   if (names.length === 0) {
     showError('No valid names found in text input');
     return;
   }
-  
+
   appState.names = names;
   initializeCache();
   showNameCount();
@@ -180,7 +182,7 @@ function initializeCache() {
   appState.names.forEach((name, index) => {
     const quadrantIndex = index % 4;
     const center = QUADRANT_CENTERS[quadrantIndex];
-    
+
     appState.cache[index] = {
       x: center.x,
       y: center.y,
@@ -201,31 +203,31 @@ elements.pdfFile.addEventListener('change', (e) => {
 
 elements.loadPdfBtn.addEventListener('click', () => {
   const pdfFile = elements.pdfFile.files[0];
-  
+
   if (!pdfFile) {
     showError('Please select a PDF file');
     return;
   }
-  
+
   loadPDFTemplate(pdfFile);
 });
 
 function loadPDFTemplate(file) {
   showLoading('Loading PDF template...');
-  
+
   const reader = new FileReader();
   reader.onload = async (e) => {
     try {
       const arrayBuffer = e.target.result;
       appState.pdfTemplateData = arrayBuffer;
-      
+
       // Load PDF using pdf.js for preview
       const loadingTask = pdfjsLib.getDocument({ data: arrayBuffer });
       const pdf = await loadingTask.promise;
       const page = await pdf.getPage(1);
-      
+
       appState.pdfTemplate = page;
-      
+
       hideLoading();
       showStep(3);
     } catch (error) {
@@ -233,12 +235,12 @@ function loadPDFTemplate(file) {
       showError('Error loading PDF: ' + error.message);
     }
   };
-  
+
   reader.onerror = () => {
     hideLoading();
     showError('Error reading PDF file');
   };
-  
+
   reader.readAsArrayBuffer(file);
 }
 
@@ -252,12 +254,12 @@ elements.fontFile.addEventListener('change', (e) => {
 
 elements.loadFontBtn.addEventListener('click', () => {
   const fontFile = elements.fontFile.files[0];
-  
+
   if (!fontFile) {
     showError('Please select a font file');
     return;
   }
-  
+
   loadCustomFont(fontFile);
 });
 
@@ -268,18 +270,18 @@ elements.skipFontBtn.addEventListener('click', () => {
 
 function loadCustomFont(file) {
   showLoading('Loading font...');
-  
+
   const reader = new FileReader();
   reader.onload = async (e) => {
     try {
       const arrayBuffer = e.target.result;
       appState.customFont = arrayBuffer;
-      
+
       // Load font for canvas preview
       const fontFace = new FontFace(appState.customFontName, arrayBuffer);
       await fontFace.load();
       document.fonts.add(fontFace);
-      
+
       hideLoading();
       showStep(4);
       initializeEditor();
@@ -288,12 +290,12 @@ function loadCustomFont(file) {
       showError('Error loading font: ' + error.message);
     }
   };
-  
+
   reader.onerror = () => {
     hideLoading();
     showError('Error reading font file');
   };
-  
+
   reader.readAsArrayBuffer(file);
 }
 
@@ -306,18 +308,18 @@ function initializeEditor() {
 async function renderCanvas() {
   const canvas = elements.editorCanvas;
   const ctx = canvas.getContext('2d');
-  
+
   // Set canvas dimensions
   canvas.width = CANVAS_WIDTH;
   canvas.height = CANVAS_HEIGHT;
-  
+
   // Calculate scale
   appState.canvasScale = CANVAS_WIDTH / PDF_WIDTH;
-  
+
   // Clear canvas
   ctx.fillStyle = '#ffffff';
   ctx.fillRect(0, 0, canvas.width, canvas.height);
-  
+
   // Render PDF template
   if (appState.pdfTemplate) {
     const viewport = appState.pdfTemplate.getViewport({ scale: appState.canvasScale });
@@ -327,7 +329,7 @@ async function renderCanvas() {
     };
     await appState.pdfTemplate.render(renderContext).promise;
   }
-  
+
   // Render text elements for current page
   renderTextElements(ctx);
 }
@@ -335,28 +337,28 @@ async function renderCanvas() {
 function renderTextElements(ctx) {
   const startIndex = appState.currentPage * NAMES_PER_PAGE;
   const endIndex = Math.min(startIndex + NAMES_PER_PAGE, appState.names.length);
-  
+
   for (let i = startIndex; i < endIndex; i++) {
     const textData = appState.cache[i];
     if (!textData) continue;
-    
+
     const x = textData.x * appState.canvasScale;
     const y = textData.y * appState.canvasScale;
     const fontSize = textData.fontSize * appState.canvasScale;
     const letterSpacing = textData.letterSpacing * appState.canvasScale;
-    
+
     // Draw text
     ctx.save();
     ctx.font = `${fontSize}px ${appState.customFont ? appState.customFontName : 'Arial'}`;
     ctx.fillStyle = '#000000';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    
+
     const lines = textData.text.split('\n');
     const lineHeight = fontSize * 1.2;
     const totalHeight = lines.length * lineHeight;
     const startY = y - totalHeight / 2 + lineHeight / 2;
-    
+
     lines.forEach((line, lineIndex) => {
       if (letterSpacing !== 0) {
         drawTextWithLetterSpacing(ctx, line, x, startY + lineIndex * lineHeight, letterSpacing);
@@ -364,7 +366,7 @@ function renderTextElements(ctx) {
         ctx.fillText(line, x, startY + lineIndex * lineHeight);
       }
     });
-    
+
     // Draw selection box if selected
     if (appState.selectedTextIndex === i) {
       ctx.strokeStyle = '#32b8c6';
@@ -378,7 +380,7 @@ function renderTextElements(ctx) {
         totalHeight + padding * 2
       );
     }
-    
+
     ctx.restore();
   }
 }
@@ -386,14 +388,14 @@ function renderTextElements(ctx) {
 function drawTextWithLetterSpacing(ctx, text, x, y, letterSpacing) {
   const chars = text.split('');
   let totalWidth = 0;
-  
+
   chars.forEach(char => {
     totalWidth += ctx.measureText(char).width + letterSpacing;
   });
   totalWidth -= letterSpacing;
-  
+
   let currentX = x - totalWidth / 2;
-  
+
   chars.forEach(char => {
     ctx.fillText(char, currentX, y);
     currentX += ctx.measureText(char).width + letterSpacing;
@@ -405,19 +407,19 @@ elements.editorCanvas.addEventListener('mousedown', (e) => {
   const rect = elements.editorCanvas.getBoundingClientRect();
   const mouseX = (e.clientX - rect.left) / appState.canvasScale;
   const mouseY = (e.clientY - rect.top) / appState.canvasScale;
-  
+
   const clickedIndex = getTextIndexAtPosition(mouseX, mouseY);
-  
+
   if (clickedIndex !== null) {
     appState.selectedTextIndex = clickedIndex;
     appState.isDragging = true;
-    
+
     const textData = appState.cache[clickedIndex];
     appState.dragOffset = {
       x: mouseX - textData.x,
       y: mouseY - textData.y
     };
-    
+
     updateTextControls();
     renderCanvas();
   } else {
@@ -432,15 +434,15 @@ elements.editorCanvas.addEventListener('mousemove', (e) => {
     const rect = elements.editorCanvas.getBoundingClientRect();
     const mouseX = (e.clientX - rect.left) / appState.canvasScale;
     const mouseY = (e.clientY - rect.top) / appState.canvasScale;
-    
+
     const textData = appState.cache[appState.selectedTextIndex];
     textData.x = mouseX - appState.dragOffset.x;
     textData.y = mouseY - appState.dragOffset.y;
-    
+
     // Clamp to canvas bounds
     textData.x = Math.max(0, Math.min(PDF_WIDTH, textData.x));
     textData.y = Math.max(0, Math.min(PDF_HEIGHT, textData.y));
-    
+
     renderCanvas();
   }
 });
@@ -453,9 +455,9 @@ elements.editorCanvas.addEventListener('dblclick', (e) => {
   const rect = elements.editorCanvas.getBoundingClientRect();
   const mouseX = (e.clientX - rect.left) / appState.canvasScale;
   const mouseY = (e.clientY - rect.top) / appState.canvasScale;
-  
+
   const clickedIndex = getTextIndexAtPosition(mouseX, mouseY);
-  
+
   if (clickedIndex !== null) {
     appState.selectedTextIndex = clickedIndex;
     updateTextControls();
@@ -467,31 +469,31 @@ elements.editorCanvas.addEventListener('dblclick', (e) => {
 function getTextIndexAtPosition(x, y) {
   const startIndex = appState.currentPage * NAMES_PER_PAGE;
   const endIndex = Math.min(startIndex + NAMES_PER_PAGE, appState.names.length);
-  
+
   for (let i = endIndex - 1; i >= startIndex; i--) {
     const textData = appState.cache[i];
     if (!textData) continue;
-    
+
     const ctx = elements.editorCanvas.getContext('2d');
     const fontSize = textData.fontSize;
     ctx.font = `${fontSize}px ${appState.customFont ? appState.customFontName : 'Arial'}`;
-    
+
     const lines = textData.text.split('\n');
     const lineHeight = fontSize * 1.2;
     const totalHeight = lines.length * lineHeight;
     const textWidth = Math.max(...lines.map(line => ctx.measureText(line).width + textData.letterSpacing * (line.length - 1)));
-    
+
     const padding = 10;
     const left = textData.x - textWidth / 2 - padding;
     const top = textData.y - totalHeight / 2 - padding;
     const width = textWidth + padding * 2;
     const height = totalHeight + padding * 2;
-    
+
     if (x >= left && x <= left + width && y >= top && y <= top + height) {
       return i;
     }
   }
-  
+
   return null;
 }
 
@@ -588,7 +590,7 @@ elements.nextPageBtn.addEventListener('click', () => {
 // Generate PDF
 elements.generatePdfBtn.addEventListener('click', async () => {
   showLoading('Generating PDF...');
-  
+
   try {
     await generateFinalPDF();
     hideLoading();
@@ -602,32 +604,32 @@ async function generateFinalPDF() {
   try {
     const pdfDoc = await PDFDocument.create();
     const templateBytes = templateArrayBuffer; // Your template file
-    
+
     const totalPages = Math.ceil(names.length / 4);
-    
+
     for (let pageNum = 0; pageNum < totalPages; pageNum++) {
       // Create a NEW PDFDocument from the template for EACH page
       const templateDoc = await PDFDocument.load(templateBytes);
       const [templatePage] = await pdfDoc.copyPages(templateDoc, [0]);
       pdfDoc.addPage(templatePage);
-      
+
       const pageIndex = pageNum;
       const startIndex = pageNum * 4;
       const endIndex = Math.min(startIndex + 4, names.length);
-      
+
       // Draw names on this page
       for (let i = startIndex; i < endIndex; i++) {
         const nameIndex = i;
         const quadrantIndex = (i - startIndex); // 0, 1, 2, or 3
         const state = cache[nameIndex];
-        
+
         if (state) {
           // Draw the text on the page
           // Use the state's position and styling
         }
       }
     }
-    
+
     // Download
     const pdfBytes = await pdfDoc.save();
     const blob = new Blob([pdfBytes], { type: 'application/pdf' });
@@ -637,7 +639,7 @@ async function generateFinalPDF() {
     link.download = 'namecards.pdf';
     link.click();
     URL.revokeObjectURL(url);
-    
+
   } catch (error) {
     console.error('Error generating PDF:', error);
     alert('Error generating PDF: ' + error.message);
