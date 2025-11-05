@@ -1,3 +1,25 @@
+// app.js - Add this at the very top
+if (typeof PDFDocument === 'undefined') {
+    console.error('pdf-lib did not load! Check your internet connection and CDN URLs.');
+}
+
+// Then use it like this:
+async function generateFinalPDF() {
+    if (typeof PDFDocument === 'undefined') {
+        alert('Error: PDF library not loaded. Please refresh the page.');
+        return;
+    }
+    
+    try {
+        const pdfDoc = await PDFDocument.create();
+        // Rest of your code...
+    } catch (error) {
+        console.error('Error generating PDF:', error);
+        alert('Error: ' + error.message);
+    }
+}
+
+
 const { PDFDocument } = window;
 
 // Initialize PDF.js worker
