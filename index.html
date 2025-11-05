@@ -3,190 +3,159 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Advanced Namecard Generator with Pagination</title>
+    <title>Namecard Generator</title>
     <link rel="stylesheet" href="style.css">
-    <script src="https://unpkg.com/papaparse@5.4.1/papaparse.min.js"></script>
-    <script src="https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
 </head>
 <body>
     <div class="container">
-        <header class="header">
-            <div class="header__top">
-                <h1>Advanced Namecard Generator</h1>
-                <div class="header-controls">
-                    <button class="btn btn--outline btn--sm" id="run-test-btn">
-                        🧪 Run Built-in Test
-                    </button>
-                    <button class="btn btn--outline btn--sm" id="developer-mode-toggle">
-                        Developer Mode: OFF
-                    </button>
-                </div>
-            </div>
-            <p class="header__subtitle">Upload CSV, PDF template, and custom fonts to generate professional namecards with pagination</p>
-            
-            <!-- Built-in Test Status -->
-            <div class="test-status" id="test-status" style="display: none;"></div>
+        <header>
+            <h1>Namecard Generator</h1>
+            <p class="subtitle">Create professional namecards for your event</p>
         </header>
 
-        <main class="main">
-            <!-- Step 1: CSV Upload -->
-            <div class="step">
-                <h2 class="step__title">
-                    <span class="step__number">1</span>
-                    Upload CSV File
-                </h2>
-                <div class="upload-area" id="csv-upload-area">
-                    <input type="file" id="csv-file" accept=".csv" class="upload-input" style="display: none;">
-                    <div class="upload-content">
-                        <div class="upload-icon">📄</div>
-                        <p class="upload-text">Drop your CSV file here or <button type="button" class="upload-link" id="csv-browse-btn">click to browse</button></p>
-                        <p class="upload-hint">CSV must contain "Name" and "Surname" columns</p>
+        <!-- Step 1: Name Input -->
+        <section id="step1" class="step active">
+            <div class="card">
+                <h2>Step 1: Input Names</h2>
+                <p class="instruction">Upload a CSV file or paste names directly</p>
+                
+                <div class="input-group">
+                    <label class="form-label">Upload CSV File</label>
+                    <div class="file-upload-wrapper">
+                        <input type="file" id="csvFile" accept=".csv" class="file-input">
+                        <label for="csvFile" class="btn btn--secondary">Choose CSV File</label>
+                        <span id="csvFileName" class="file-name">No file chosen</span>
+                    </div>
+                    <small class="help-text">CSV format: FirstName,LastName (with header row)</small>
+                </div>
+
+                <div class="divider">
+                    <span>OR</span>
+                </div>
+
+                <div class="input-group">
+                    <label class="form-label" for="textInput">Paste Names (one per line)</label>
+                    <textarea id="textInput" class="form-control" rows="8" placeholder="John Doe&#10;Jane Smith&#10;Michael Johnson&#10;Sarah Williams"></textarea>
+                    <small class="help-text">Format: FirstName LastName (one per line)</small>
+                </div>
+
+                <div id="nameCount" class="status status--info" style="display: none;">
+                    <span id="nameCountText">0 names loaded</span>
+                </div>
+
+                <button id="loadNamesBtn" class="btn btn--primary">Load Names</button>
+            </div>
+        </section>
+
+        <!-- Step 2: PDF Template Upload -->
+        <section id="step2" class="step">
+            <div class="card">
+                <h2>Step 2: Upload PDF Template</h2>
+                <p class="instruction">Upload your A4 template (will be divided into 4 quadrants)</p>
+                
+                <div class="input-group">
+                    <div class="file-upload-wrapper">
+                        <input type="file" id="pdfFile" accept=".pdf" class="file-input">
+                        <label for="pdfFile" class="btn btn--secondary">Choose PDF Template</label>
+                        <span id="pdfFileName" class="file-name">No file chosen</span>
                     </div>
                 </div>
-                <div class="upload-status" id="csv-status"></div>
-            </div>
 
-            <!-- Step 2: PDF Upload -->
-            <div class="step">
-                <h2 class="step__title">
-                    <span class="step__number">2</span>
-                    Upload PDF Template
-                </h2>
-                <div class="upload-area" id="pdf-upload-area">
-                    <input type="file" id="pdf-file" accept=".pdf" class="upload-input" style="display: none;">
-                    <div class="upload-content">
-                        <div class="upload-icon">📋</div>
-                        <p class="upload-text">Drop your PDF template here or <button type="button" class="upload-link" id="pdf-browse-btn">click to browse</button></p>
-                        <p class="upload-hint">A4 format PDF template for namecard design</p>
+                <button id="loadPdfBtn" class="btn btn--primary">Load Template</button>
+            </div>
+        </section>
+
+        <!-- Step 3: Optional Font Upload -->
+        <section id="step3" class="step">
+            <div class="card">
+                <h2>Step 3: Custom Font (Optional)</h2>
+                <p class="instruction">Upload a .ttf font file or skip to use default font</p>
+                
+                <div class="input-group">
+                    <div class="file-upload-wrapper">
+                        <input type="file" id="fontFile" accept=".ttf" class="file-input">
+                        <label for="fontFile" class="btn btn--secondary">Choose Font File</label>
+                        <span id="fontFileName" class="file-name">No file chosen</span>
                     </div>
                 </div>
-                <div class="upload-status" id="pdf-status"></div>
-            </div>
 
-            <!-- Step 3: Font Upload (Optional) -->
-            <div class="step">
-                <h2 class="step__title">
-                    <span class="step__number">3</span>
-                    Upload Custom Font (Optional)
-                </h2>
-                <div class="upload-area" id="font-upload-area">
-                    <input type="file" id="font-file" accept=".ttf,.otf,.woff,.woff2" class="upload-input" style="display: none;">
-                    <div class="upload-content">
-                        <div class="upload-icon">🔤</div>
-                        <p class="upload-text">Drop your font file here or <button type="button" class="upload-link" id="font-browse-btn">click to browse</button></p>
-                        <p class="upload-hint">Supports .ttf, .otf, .woff, .woff2 formats</p>
+                <div class="button-group">
+                    <button id="loadFontBtn" class="btn btn--secondary">Upload Font</button>
+                    <button id="skipFontBtn" class="btn btn--primary">Skip (Use Default)</button>
+                </div>
+            </div>
+        </section>
+
+        <!-- Step 4: Interactive Editor -->
+        <section id="step4" class="step">
+            <div class="editor-container">
+                <div class="editor-header">
+                    <h2>Step 4: Position &amp; Edit Names</h2>
+                    <div class="pagination">
+                        <button id="prevPageBtn" class="btn btn--outline btn--sm">← Previous</button>
+                        <span id="pageInfo" class="page-info">Page 1 of 1</span>
+                        <button id="nextPageBtn" class="btn btn--outline btn--sm">Next →</button>
                     </div>
                 </div>
-                <div class="upload-status" id="font-status"></div>
-            </div>
 
-            <!-- Step 4: Interactive Preview with Pagination -->
-            <div class="step step--disabled" id="preview-step">
-                <h2 class="step__title">
-                    <span class="step__number step__number--disabled">4</span>
-                    Interactive Preview with Pagination
-                </h2>
-                <div class="step-content" id="preview-content" style="display: none;">
-                    <div class="card">
-                        <div class="card__body">
-                            <div class="preview-summary">
-                                <p><strong id="name-count">0</strong> names loaded from CSV</p>
-                                <p><strong id="page-count">0</strong> pages will be generated (4 names per page)</p>
-                                <div id="developer-info" class="developer-info" style="display: none;">
-                                    <p><strong>Developer Mode:</strong> Click and drag names to reposition them on current page</p>
-                                    <p id="coordinates-display">Position: x: 0, y: 0</p>
-                                </div>
+                <div class="editor-layout">
+                    <div class="canvas-container">
+                        <canvas id="editorCanvas"></canvas>
+                        <div id="quadrantGuides" class="quadrant-guides">
+                            <div class="guide guide-vertical" style="left: 50%;"></div>
+                            <div class="guide guide-horizontal" style="top: 50%;"></div>
+                        </div>
+                    </div>
+
+                    <div class="controls-panel">
+                        <h3>Text Controls</h3>
+                        <p class="help-text">Click a name to select, drag to move, double-click to edit</p>
+                        
+                        <div id="textControls" class="text-controls">
+                            <div class="control-group">
+                                <label class="form-label">Selected Name:</label>
+                                <input type="text" id="textContentInput" class="form-control" placeholder="Select a name first">
                             </div>
 
-                            <!-- Pagination Controls -->
-                            <div class="pagination-controls">
-                                <button class="btn btn--outline btn--sm" id="prev-page" disabled>← Previous</button>
-                                <span class="page-indicator" id="page-indicator">Page 1 of 1</span>
-                                <button class="btn btn--outline btn--sm" id="next-page" disabled>Next →</button>
-                            </div>
-                            
-                            <div class="preview-container">
-                                <div class="preview-page" id="preview-page">
-                                    <canvas id="preview-canvas" width="595" height="842"></canvas>
-                                    <div class="name-overlay" id="name-overlay">
-                                        <!-- Draggable name elements will be added here -->
-                                    </div>
-                                </div>
+                            <div class="control-group">
+                                <label class="form-label" for="fontSizeSlider">Font Size: <span id="fontSizeValue">24</span>px</label>
+                                <input type="range" id="fontSizeSlider" min="10" max="72" value="24" class="slider">
                             </div>
 
-                            <div class="name-list">
-                                <h4>Names on current page:</h4>
-                                <div class="table-container">
-                                    <table class="preview-table" id="preview-table">
-                                        <thead>
-                                            <tr>
-                                                <th>Position</th>
-                                                <th>First Name</th>
-                                                <th>Last Name</th>
-                                                <th>Coordinates</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody id="preview-tbody">
-                                        </tbody>
-                                    </table>
-                                </div>
+                            <div class="control-group">
+                                <label class="form-label" for="letterSpacingSlider">Letter Spacing: <span id="letterSpacingValue">0</span>px</label>
+                                <input type="range" id="letterSpacingSlider" min="-5" max="20" value="0" class="slider">
+                            </div>
+
+                            <div class="control-group">
+                                <button id="centerTextBtn" class="btn btn--secondary btn--full-width">Center in Quadrant</button>
                             </div>
                         </div>
                     </div>
                 </div>
-                <div class="step-placeholder">
-                    <p class="step-placeholder__text">Upload CSV and PDF files to see interactive preview with pagination</p>
-                </div>
-            </div>
 
-            <!-- Step 5: Generate -->
-            <div class="step step--disabled" id="generate-step">
-                <h2 class="step__title">
-                    <span class="step__number step__number--disabled">5</span>
-                    Generate Multi-Page Namecards
-                </h2>
-                <div class="generate-section">
-                    <div class="text-formatting-controls">
-                        <div class="form-group">
-                            <label class="form-label" for="font-size">Font Size:</label>
-                            <input type="range" id="font-size" class="form-control" min="10" max="30" value="18">
-                            <span id="font-size-display">18px</span>
-                        </div>
-                    </div>
-                    <button class="btn btn--primary btn--lg" id="generate-btn" disabled>
-                        Generate All Pages
-                    </button>
-                    <div class="generate-status" id="generate-status"></div>
-                </div>
-                <div class="step-placeholder" id="generate-placeholder">
-                    <p class="step-placeholder__text">Upload both CSV and PDF files to generate multi-page namecards</p>
+                <div class="editor-footer">
+                    <button id="generatePdfBtn" class="btn btn--primary btn-lg">Generate &amp; Download PDF</button>
                 </div>
             </div>
-
-            <!-- Download Section -->
-            <div class="step step--disabled" id="download-step" style="display: none;">
-                <h2 class="step__title">
-                    <span class="step__number success">✓</span>
-                    Download Ready
-                </h2>
-                <div class="download-section">
-                    <p class="download-message">Your multi-page namecards have been generated successfully!</p>
-                    <button class="btn btn--primary btn--lg" id="download-btn">
-                        Download PDF
-                    </button>
-                </div>
-            </div>
-        </main>
+        </section>
 
         <!-- Loading Overlay -->
-        <div class="loading-overlay" id="loading-overlay" style="display: none;">
-            <div class="loading-content">
-                <div class="loading-spinner"></div>
-                <p class="loading-text">Processing...</p>
-            </div>
+        <div id="loadingOverlay" class="loading-overlay">
+            <div class="spinner"></div>
+            <p id="loadingText">Processing...</p>
         </div>
+
+        <!-- Error Messages -->
+        <div id="errorContainer" class="error-container"></div>
     </div>
 
+    <!-- External Libraries -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <script src="https://unpkg.com/pdf-lib"></script>
+    
+    <!-- Application Script -->
     <script src="app.js"></script>
 </body>
 </html>
