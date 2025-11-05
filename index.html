@@ -1,13 +1,26 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Namecard Generator</title>
     <link rel="stylesheet" href="style.css">
-    <script src="https://unpkg.com/pdf-lib@1.17.1"></script>
-    <script src="https://unpkg.com/@pdf-lib/standard-fonts@1.0.0"></script>
+    <script>
+        // Set up PDF.js worker before loading
+        if (typeof pdfjsLib !== 'undefined') {
+            pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+        }
+    </script>
+
+    <script src="https://cdn.jsdelivr.net/npm/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
+
+    <script src="app.js"></script>
+
 </head>
+
 <body>
     <div class="container">
         <header>
@@ -20,7 +33,7 @@
             <div class="card">
                 <h2>Step 1: Input Names</h2>
                 <p class="instruction">Upload a CSV file or paste names directly</p>
-                
+
                 <div class="input-group">
                     <label class="form-label">Upload CSV File</label>
                     <div class="file-upload-wrapper">
@@ -37,7 +50,8 @@
 
                 <div class="input-group">
                     <label class="form-label" for="textInput">Paste Names (one per line)</label>
-                    <textarea id="textInput" class="form-control" rows="8" placeholder="John Doe&#10;Jane Smith&#10;Michael Johnson&#10;Sarah Williams"></textarea>
+                    <textarea id="textInput" class="form-control" rows="8"
+                        placeholder="John Doe&#10;Jane Smith&#10;Michael Johnson&#10;Sarah Williams"></textarea>
                     <small class="help-text">Format: FirstName LastName (one per line)</small>
                 </div>
 
@@ -54,7 +68,7 @@
             <div class="card">
                 <h2>Step 2: Upload PDF Template</h2>
                 <p class="instruction">Upload your A4 template (will be divided into 4 quadrants)</p>
-                
+
                 <div class="input-group">
                     <div class="file-upload-wrapper">
                         <input type="file" id="pdfFile" accept=".pdf" class="file-input">
@@ -72,7 +86,7 @@
             <div class="card">
                 <h2>Step 3: Custom Font (Optional)</h2>
                 <p class="instruction">Upload a .ttf font file or skip to use default font</p>
-                
+
                 <div class="input-group">
                     <div class="file-upload-wrapper">
                         <input type="file" id="fontFile" accept=".ttf" class="file-input">
@@ -112,25 +126,29 @@
                     <div class="controls-panel">
                         <h3>Text Controls</h3>
                         <p class="help-text">Click a name to select, drag to move, double-click to edit</p>
-                        
+
                         <div id="textControls" class="text-controls">
                             <div class="control-group">
                                 <label class="form-label">Selected Name:</label>
-                                <input type="text" id="textContentInput" class="form-control" placeholder="Select a name first">
+                                <input type="text" id="textContentInput" class="form-control"
+                                    placeholder="Select a name first">
                             </div>
 
                             <div class="control-group">
-                                <label class="form-label" for="fontSizeSlider">Font Size: <span id="fontSizeValue">24</span>px</label>
+                                <label class="form-label" for="fontSizeSlider">Font Size: <span
+                                        id="fontSizeValue">24</span>px</label>
                                 <input type="range" id="fontSizeSlider" min="10" max="72" value="24" class="slider">
                             </div>
 
                             <div class="control-group">
-                                <label class="form-label" for="letterSpacingSlider">Letter Spacing: <span id="letterSpacingValue">0</span>px</label>
+                                <label class="form-label" for="letterSpacingSlider">Letter Spacing: <span
+                                        id="letterSpacingValue">0</span>px</label>
                                 <input type="range" id="letterSpacingSlider" min="-5" max="20" value="0" class="slider">
                             </div>
 
                             <div class="control-group">
-                                <button id="centerTextBtn" class="btn btn--secondary btn--full-width">Center in Quadrant</button>
+                                <button id="centerTextBtn" class="btn btn--secondary btn--full-width">Center in
+                                    Quadrant</button>
                             </div>
                         </div>
                     </div>
@@ -156,8 +174,9 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
     <script src="https://unpkg.com/pdf-lib"></script>
-    
+
     <!-- Application Script -->
     <script src="app.js"></script>
 </body>
+
 </html>
